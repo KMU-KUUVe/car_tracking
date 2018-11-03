@@ -11,9 +11,10 @@
 
   <node pkg="car_tracking" name="car_tracking" type="tracking_1.py" output="screen">
 
-	  <param name="S_goal" value="2.0" />
-	  <param name="HZ" value="60.0" />
-	  <param name="speed_error" value="0.01" />
+	  <param name="S_goal" type="double" value="2.0" />
+	  <param name="HZ" type="double" value="60.0" />
+	  <param name="speed_error" type="double" value="0.01" />
+	  <param name="brake_unit" value="50" />
   </node>
 
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">

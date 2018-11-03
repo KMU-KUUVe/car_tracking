@@ -15,6 +15,7 @@ class tracking:
 		self.S_goal = rospy.get_param("/car_tracking/S_goal") # desired Relative distance
 		self.HZ = rospy.get_param("/car_tracking/HZ")
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
+                self.brake_unit = rospy.get_param("/car_tracking/brake_unit")
 		
 
 
@@ -36,7 +37,11 @@ class tracking:
 		self.speed_t = self.speed + self.S_now/HZ  #target speed		
 		if (self.S_goal > self.S_now + 0.7):
 			self.speed = self.speed_t - self.speed_error
-			self.brake = 50
+## branches
+- master: kasa competition (from )
+## branches
+- master: kasa competition (from )
+			self.brake = self.brake_unit
 		elif(self.S_goal + 0.7 < self.S_now ):
 			self.speed = self.speed_t + self.speed_error
 			self.brake = 0
