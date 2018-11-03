@@ -33,7 +33,7 @@ class tracking:
 		print("Target distance : " + str(self.S_now))
 		acker_data = AckermannDriveStamped()
 		#speed, steering
-		self.speed_t = speed + S_now/HZ  #target speed		
+		self.speed_t = self.speed + self.S_now/HZ  #target speed		
 		if (self.S_goal > self.S_now + 0.7):
 			self.speed = self.speed_t - self.speed_error
 			self.brake = 50
