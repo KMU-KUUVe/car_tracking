@@ -16,6 +16,9 @@ class tracking:
 		self.HZ = rospy.get_param("/car_tracking/HZ")
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
                 self.brake_unit = rospy.get_param("/car_tracking/brake_unit")
+                self.max_speed = rospy.get_param("/car_tracking/max_speed")
+
+                self.speed = 0
 		
 
 
@@ -34,27 +37,31 @@ class tracking:
 		print("Target distance : " + str(self.S_now))
 		acker_data = AckermannDriveStamped()
 		#speed, steering
-		self.speed_t = self.speed + self.S_now/HZ  #target speed		
-		if (self.S_goal > self.S_now + 0.7):
-			self.speed = self.speed_t - self.speed_error
-## branches
-- master: kasa competition (from )
-## branches
-- master: kasa competition (from )
+		self.speed_t = self.speed + (self.S_now-self.S_goal)/self.HZ  #target speed		
+		if (self.S_goal > self.S_now + 0.5):
+			self.speed = self.speed_t - self.speed_error*100
 			self.brake = self.brake_unit
-		elif(self.S_goal + 0.7 < self.S_now ):
+		elif(self.S_goal + 0.5 < self.S_now ):
 			self.speed = self.speed_t + self.speed_error
 			self.brake = 0
-		elif(abs(self.S_now - self.S_goal) <= 0.7):
+		elif(abs(self.S_now - self.S_goal) <= 0.5):
 			self.speed = self.speed_t
 			self.brake = 0
 
+                if(self.speed > self.max_speed):
+                    self.speed = self.max_speed
+                elif(self.speed < 0):
+                    print("speed is less than 0!!")
+                    self.speed = 0
+
+                if(self.S_now < 0.7):
+                    self.speed = 0
+
 		acker_data.drive.speed = int(self.speed)
-		acker_data.drive.speed = int(self.brake)		
+		acker_data.drive.brake = int(self.brake)		
 		acker_data.drive.steering_angle = 0
-		self.count = self.count + 1
 		print("speed : " + str(acker_data.drive.speed))
-		print("speed : " + str(acker_data.drive.brake))
+		print("brake : " + str(acker_data.drive.brake))
 		print("steering : " + str(acker_data.drive.steering_angle))	
 		self.pub.publish(acker_data)
 if __name__ == '__main__':
