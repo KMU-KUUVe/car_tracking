@@ -5,15 +5,15 @@
   <node pkg="platform_control" name="write_serial" type="write_serial" />
 
   <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
-	  <rosparam command="load" file="$(find pg_tracking)/launch/box_filter.yaml" />
+	  <rosparam command="load" file="$(find car_tracking)/launch/box_filter.yaml" />
   </node>
   
 
-  <node pkg="pg_tracking" name="pg_tracking" type="tracking.py" output="screen">
-	  <param name="constant_distance" value="3.5" />
-	  <param name="KI" value="10.0" />
-	  <param name="KP" value="100.0" />
-	  
+  <node pkg="car_tracking" name="car_tracking" type="tracking_1.py" output="screen">
+
+	  <param name="S_goal" value="2.0" />
+	  <param name="HZ" value="60.0" />
+	  <param name="speed_error" value="0.01" />
   </node>
 
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
