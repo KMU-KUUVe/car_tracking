@@ -22,6 +22,7 @@ class tracking:
 
 		# Server
 		self.server = actionlib.SimpleActionServer('car_tracking', MissionPlannerAction, execute_cb=execute_cb, auto_start=False)
+		self.server.start()
 		self.result = MissionPlannerResult()
 
 		self.S_goal = rospy.get_param("/car_tracking/S_goal") # desired Relative distance
