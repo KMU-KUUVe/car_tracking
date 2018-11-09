@@ -32,7 +32,9 @@ class tracking:
                 self.max_speed = rospy.get_param("/car_tracking/max_speed")
                 self.speed = 0
 		
-	def target_lane_feedback_cb(self, 
+	def target_lane_feedback_cb(self, feedback):
+		acker_data = ackermannDriveStamped()
+		acker_data.drive.steering_angle = self.feedback.tracking_feedback
 
 	def target_lane_done_cb(self, result):
 		#self.is_detect_crosswalk = True

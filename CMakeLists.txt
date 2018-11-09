@@ -69,7 +69,6 @@ message_generation
 
 ## Generate actions in the 'action' folder
  add_action_files(
-   FILES
    DIRECTORY action FILES car_tracking.action
  )
 
@@ -113,7 +112,7 @@ message_generation
 catkin_package(
 #  INCLUDE_DIRS include
 #  LIBRARIES car_tracking
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS actionlib_msgs std_msgs message_runtime
 #  DEPENDS system_lib
 )
 
