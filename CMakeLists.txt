@@ -16,6 +16,8 @@ message_generation
  geometry_msgs
  obstacle_detector
  ackermann_msgs
+ actionlib_msgs
+ actionlib
 )
 
 ## System dependencies are found with CMake's conventions
@@ -66,18 +68,18 @@ message_generation
 # )
 
 ## Generate actions in the 'action' folder
-# add_action_files(
-#   FILES
-#   Action1.action
-#   Action2.action
-# )
+ add_action_files(
+   FILES
+   DIRECTORY action FILES car_tracking.action
+ )
 
 ## Generate added messages and services with any dependencies listed here
  generate_messages(
  DEPENDENCIES
    std_msgs  # Or other packages containing msgs
    ackermann_msgs  # Or other packages containing msgs
- )
+   actionlib_msgs
+)
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##

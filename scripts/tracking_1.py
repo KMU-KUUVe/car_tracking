@@ -6,6 +6,7 @@ from std_msgs.msg import String
 from obstacle_detector.msg import Obstacles
 from geometry_msgs.msg import Point
 from ackermann_msgs.msg import AckermannDriveStamped
+from tracking_client import Tracking_Client
 
 class tracking:
 	def __init__(self):
@@ -17,10 +18,11 @@ class tracking:
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
                 self.brake_unit = rospy.get_param("/car_tracking/brake_unit")
                 self.max_speed = rospy.get_param("/car_tracking/max_speed")
-
                 self.speed = 0
 		
-
+		#action client setting ssival
+		self.lane_detecting = Tracking_client()
+		self.lane_detecting.execute()
 
 	def obstacles_cb(self, data):
 		self.target_segment_center = Point(100,100,0)
@@ -54,12 +56,12 @@ class tracking:
                     print("speed is less than 0!!")
                     self.speed = 0
 
-                if(self.S_now < 0.7):
+                if(self.S_now < 1.5):
                     self.speed = 0
 
 		acker_data.drive.speed = int(self.speed)
 		acker_data.drive.brake = int(self.brake)		
-		acker_data.drive.steering_angle = 0
+		acker_data.drive.steering_angle = self.lane_detecting.steering #feedback steering data
 		print("speed : " + str(acker_data.drive.speed))
 		print("brake : " + str(acker_data.drive.brake))
 		print("steering : " + str(acker_data.drive.steering_angle))	
