@@ -24,26 +24,34 @@ class tracking:
 		self.server = actionlib.SimpleActionServer('car_tracking', MissionPlannerAction, execute_cb=execute_cb, auto_start=False)
 		self.result = MissionPlannerResult()
 
+
 		self.S_goal = rospy.get_param("/car_tracking/S_goal") # desired Relative distance
 		self.HZ = rospy.get_param("/car_tracking/HZ")
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
                 self.brake_unit = rospy.get_param("/car_tracking/brake_unit")
                 self.max_speed = rospy.get_param("/car_tracking/max_speed")
                 self.speed = 0
-		self.steer = 0
-		self.object_width = rospy.get_param("/car_tracking/object_width")
-		self.car_width = rospy.get_param("/car_tracking/car_width")
-		self.object_distance = rospy.get_param("/car_tracking/object_distance")
 		
 	def target_lane_feedback_cb(self, feedback):
-		self.steer = self.feedback.tracking_feedback
+		acker_data = ackermannDriveStamped()
+		acker_data.drive.steering_angle = self.feedback.tracking_feedback
+
+	def target_lane_done_cb(self, result):
+		#self.is_detect_crosswalk = True
+		acker_data = AckermannDriveStamped()
+		acker_data.drive.speed = 0
+		acker_data.drive.steering_angle = 0
+		self.pub.publish(acker_data)
+################
+		self.server.set_succeeded(self.result)
+################
 
 	# LiDAR Algorithm Start
 	def execute_cb(self, goal):
 		# find server!
 		self.client.wait_for_server()
 		# send goal to target lane node
-		self.client.send_goal(self.goal, feedbackcb = target_lane_feedback_cb)
+		self.client.send_goal(self.goal, done_cb=target_lane_done_cb)
 		# run algotihm
 		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
 
@@ -52,7 +60,6 @@ class tracking:
 		self.client.send_goal(goal)
 
 		self.target_segment_center = Point(100,100,0)
-		self.detected_width = math.sqrt((self.segment.last_point.y - self.segment.first_point.y)**2 + (self.segment.last_point.x - self.segment.first_point.x)**2)
 		self.S_now = math.sqrt(self.target_segment_center.x**2 + self.target_segment_center.y**2) # Relative distance
 		segment_center_point = data.segments
 		#search nearest segments		
@@ -67,47 +74,36 @@ class tracking:
 		acker_data = AckermannDriveStamped()
 		#speed, steering
 		self.speed_t = self.speed + (self.S_now-self.S_goal)/self.HZ  #target speed		
+		if (self.S_goal > self.S_now + 0.5):
+			self.speed = self.speed_t - self.speed_error*100
+			self.brake = self.brake_unit
+		elif(self.S_goal + 0.5 < self.S_now ):
+			self.speed = self.speed_t + self.speed_error
+			self.brake = 0
+		elif(abs(self.S_now - self.S_goal) <= 0.5):
+			self.speed = self.speed_t
+			self.brake = 0
 
-		if (self.detected_width < self.car_width && self.object_width < self.detected_width):
-			if (self.S_goal > self.S_now + 0.5):
-				self.speed = self.speed_t - self.speed_error*100
-				self.brake = self.brake_unit
-			elif(self.S_goal + 0.5 < self.S_now ):
-				self.speed = self.speed_t + self.speed_error
-				self.brake = 0
-			elif(abs(self.S_now - self.S_goal) <= 0.5):
-				self.speed = self.speed_t
-				self.brake = 0
+                if(self.speed > self.max_speed):
+                    self.speed = self.max_speed
+                elif(self.speed < 0):
+                    print("speed is less than 0!!")
+                    self.speed = 0
 
-		        if(self.speed > self.max_speed):
-		            self.speed = self.max_speed
-		        elif(self.speed < 0):
-		            print("speed is less than 0!!")
-		            self.speed = 0
-
-		        if(self.S_now < 1.5):
-		            self.speed = 0
-		
-		elif (self.detected_width < self.object_width && S_now < self.object_distance && self.target_segment_center.x > 8.0  ):
-			self.client.cancel_goal()
-			acker_data.drive.speed = 0
-			acker_data.drive.steering_angle = 0
-			self.pub.publish(acker_data)
-			self.server.set_succeeded(self.result)
-		if(self.S_now <0.5)
-			acker_data.drive.speed=0
+                if(self.S_now < 1.5):
+                    self.speed = 0
 
 		acker_data.drive.speed = int(self.speed)
 		acker_data.drive.brake = int(self.brake)		
-		acker_data.drive.steering_angle = self.steer #feedback steering data
+		acker_data.drive.steering_angle = self.lane_detecting.steering #feedback steering data
 		print("speed : " + str(acker_data.drive.speed))
 		print("brake : " + str(acker_data.drive.brake))
 		print("steering : " + str(acker_data.drive.steering_angle))	
 		self.pub.publish(acker_data)
-
-
 if __name__ == '__main__':
-	try: 	
+	try: 
+				
+	
 		trakcing_mission = tracking()
 		rospy.spin()	
 		
