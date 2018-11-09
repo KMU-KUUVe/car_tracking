@@ -6,13 +6,25 @@ from std_msgs.msg import String
 from obstacle_detector.msg import Obstacles
 from geometry_msgs.msg import Point
 from ackermann_msgs.msg import AckermannDriveStamped
-from tracking_client import Tracking_Client
+from mission_planner.msg import MissionPlannerAction, MissionPlannerGoal, MissionPlannerResult, MissionPlannerFeedback
+
+from car_tracking.msg import car_trackingGoal, car_trackingAction, car_trackingFeedback
 
 class tracking:
-	def __init__(self):
-		self.pub = rospy.Publisher('ackermann', AckermannDriveStamped, queue_size=10)		
-		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
-		rospy.init_node('car_tracking', anonymous=True)	
+	def __init__(self):		
+		rospy.init_node('car_tracking', anonymous=True)
+
+		self.pub = rospy.Publisher('ackermann', AckermannDriveStamped, queue_size=10)
+
+		# Client
+		self.client = actionlib.SimpleActionClient('target_lane_detect_goal', car_trackingAction)
+		self.goal = car_trackingGoal()
+
+		# Server
+		self.server = actionlib.SimpleActionServer('car_tracking', MissionPlannerAction, execute_cb=execute_cb, auto_start=False)
+		self.result = MissionPlannerResult()
+
+
 		self.S_goal = rospy.get_param("/car_tracking/S_goal") # desired Relative distance
 		self.HZ = rospy.get_param("/car_tracking/HZ")
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
@@ -20,11 +32,31 @@ class tracking:
                 self.max_speed = rospy.get_param("/car_tracking/max_speed")
                 self.speed = 0
 		
-		#action client setting ssival
-		self.lane_detecting = Tracking_client()
-		self.lane_detecting.execute()
+	def target_lane_feedback_cb(self, 
+
+	def target_lane_done_cb(self, result):
+		#self.is_detect_crosswalk = True
+		acker_data = AckermannDriveStamped()
+		acker_data.drive.speed = 0
+		acker_data.drive.steering_angle = 0
+		self.pub.publish(acker_data)
+################
+		self.server.set_succeeded(self.result)
+################
+
+	# LiDAR Algorithm Start
+	def execute_cb(self, goal):
+		# find server!
+		self.client.wait_for_server()
+		# send goal to target lane node
+		self.client.send_goal(self.goal, done_cb=target_lane_done_cb)
+		# run algotihm
+		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
 
 	def obstacles_cb(self, data):
+		self.client.wait_for_server()
+		self.client.send_goal(goal)
+
 		self.target_segment_center = Point(100,100,0)
 		self.S_now = math.sqrt(self.target_segment_center.x**2 + self.target_segment_center.y**2) # Relative distance
 		segment_center_point = data.segments
