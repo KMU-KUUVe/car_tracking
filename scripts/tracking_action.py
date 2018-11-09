@@ -24,34 +24,23 @@ class tracking:
 		self.server = actionlib.SimpleActionServer('car_tracking', MissionPlannerAction, execute_cb=execute_cb, auto_start=False)
 		self.result = MissionPlannerResult()
 
-
 		self.S_goal = rospy.get_param("/car_tracking/S_goal") # desired Relative distance
 		self.HZ = rospy.get_param("/car_tracking/HZ")
 		self.speed_error = rospy.get_param("/car_tracking/speed_error")
                 self.brake_unit = rospy.get_param("/car_tracking/brake_unit")
                 self.max_speed = rospy.get_param("/car_tracking/max_speed")
                 self.speed = 0
+		self.steer = 0
 		
 	def target_lane_feedback_cb(self, feedback):
-		acker_data = ackermannDriveStamped()
-		acker_data.drive.steering_angle = self.feedback.tracking_feedback
-
-	def target_lane_done_cb(self, result):
-		#self.is_detect_crosswalk = True
-		acker_data = AckermannDriveStamped()
-		acker_data.drive.speed = 0
-		acker_data.drive.steering_angle = 0
-		self.pub.publish(acker_data)
-################
-		self.server.set_succeeded(self.result)
-################
+		self.steer = self.feedback.tracking_feedback
 
 	# LiDAR Algorithm Start
 	def execute_cb(self, goal):
 		# find server!
 		self.client.wait_for_server()
 		# send goal to target lane node
-		self.client.send_goal(self.goal, done_cb=target_lane_done_cb)
+		self.client.send_goal(self.goal, feedbackcb = target_lane_feedback_cb)
 		# run algotihm
 		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
 
@@ -95,15 +84,22 @@ class tracking:
 
 		acker_data.drive.speed = int(self.speed)
 		acker_data.drive.brake = int(self.brake)		
-		acker_data.drive.steering_angle = self.lane_detecting.steering #feedback steering data
+		acker_data.drive.steering_angle = self.steer #feedback steering data
 		print("speed : " + str(acker_data.drive.speed))
 		print("brake : " + str(acker_data.drive.brake))
 		print("steering : " + str(acker_data.drive.steering_angle))	
 		self.pub.publish(acker_data)
+
+####################finish
+#		self.client.cancel_goal()
+#		acker_data.drive.speed = 0
+#		acker_data.drive.steering_angle = 0
+#		self.pub.publish(acker_data)
+#		self.server.set_succeeded(self.result)
+#####################
+
 if __name__ == '__main__':
-	try: 
-				
-	
+	try: 	
 		trakcing_mission = tracking()
 		rospy.spin()	
 		
