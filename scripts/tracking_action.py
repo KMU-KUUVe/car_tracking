@@ -17,7 +17,7 @@ class tracking:
 		self.pub = rospy.Publisher('ackermann', AckermannDriveStamped, queue_size=10)
 
 		# Client
-		self.client = actionlib.SimpleActionClient('target_lane_detect_goal', car_trackingAction)
+		self.client = actionlib.SimpleActionClient('target_lane', car_trackingAction)
 		self.goal = car_trackingGoal()
 
 		# Server
