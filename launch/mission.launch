@@ -15,7 +15,7 @@
 	  <param name="wall_width" value="1.5" />
 	 <!-- <param name="car_width" value="3" /> -->
 	  <param name="wall_dist" type="double" value="7.5" />
-	  <param name="cal_dist" type="double" value="3.0" />
+	  <param name="car_dist" type="double" value="3.0" />
   </node>
 
   <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">

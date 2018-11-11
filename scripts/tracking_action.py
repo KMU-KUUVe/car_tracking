@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import rospy
 import math
+import actionlib
 
 from std_msgs.msg import String
 from obstacle_detector.msg import Obstacles
@@ -40,7 +41,7 @@ class tracking:
 
 
 	def target_lane_feedback_cb(self, feedback):
-		self.steer = self.feedback.tracking_feedback
+		self.steer = feedback.tracking_feedback
 
 
 	# LiDAR Algorithm Start
@@ -48,7 +49,7 @@ class tracking:
 		# find server!
 		self.client.wait_for_server()
 		# send goal to taet lane node
-		self.client.send_goal(self.goal, feedbackcb = target_lane_feedback_cb)
+		self.client.send_goal(self.goal, feedback_cb = self.target_lane_feedback_cb)
 		# run algotihm
 		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
 
@@ -87,14 +88,14 @@ class tracking:
 			acker_data = AckermannDriveStamped()
 			#speed, steering
 			# detect the wall &  stop in a desired distance
-			if (abs(self.detected_width - self.wall_width)<0.5 && detected_dist< self.wall_dist):
-				self.finish_flag = True
-				
+			if (abs(self.detected_width - self.wall_width)<0.5 and detected_dist< self.wall_dist):
 				print("wall is detected!")
 				self.client.cancel_goal()
 				acker_data.drive.speed = 0
 				acker_data.drive.steering_angle = 0
 				self.pub.publish(acker_data)
+
+				self.finish_flag = True
 			# detect nothing & speed is constant
 			elif(self.target_segment_center.x == 0):
 				print("detect nothing!")
@@ -127,7 +128,7 @@ class tracking:
 
 
 			#safety action
-			if(self.detected_dist <0.5)
+			if(self.detected_dist <0.5):
 				acker_data.drive.speed=0
 			
 			acker_data.drive.speed = int(self.speed)
