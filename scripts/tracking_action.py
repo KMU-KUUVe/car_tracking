@@ -115,7 +115,7 @@ class tracking:
 					self.brake = 0
 				elif(abs(self.detected_dist - self.car_dist) <= 0.5):
 					print("const speed")
-					self.speed = before_speed
+					self.speed = self.before_speed
 					self.brake = 0
 
 				if(self.speed > self.max_speed):
