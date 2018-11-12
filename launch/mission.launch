@@ -11,7 +11,7 @@
 	  <param name="HZ" type="double" value="50.0" />
 	  <param name="speed_error" type="double" value="0.001" />
 	  <param name="brake_unit" value="90" />
-	  <param name="max_speed" value="9" />
+	  <param name="max_speed" value="5" />
 	 <!-- <param name="car_width" value="3" /> -->
 	  <param name="wall_dist" type="double" value="7.5" />
 	  <param name="car_dist" type="double" value="3.0" />

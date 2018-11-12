@@ -34,6 +34,8 @@ class tracking:
 		self.temp_x = 777
 		self.wall_dist = rospy.get_param("/car_tracking/wall_dist") # distance of platform & wall desired
 		self.car_dist = rospy.get_param("/car_tracking/car_dist")   # distance of platform & car desired
+
+		self.before_speed = 0
 		
 		self.start_flag = False
 		self.finish_flag = False
@@ -67,10 +69,9 @@ class tracking:
 
 
 	def obstacles_cb(self, data):
-		
-		
 		if(self.start_flag == True):
 			
+			nearest_x = 0
 			for segment in data.segments:
 				nearest_x = segment.first_point.x
 				if nearest_x >= segment.first_point.x:
@@ -83,43 +84,43 @@ class tracking:
 					rospy.loginfo('wall detected')
 					self.wall_flag = True
 
-			self.temp_x = nearest_x
 			acker_data = AckermannDriveStamped() 
+
+			if nearest_x == 0:
+				rospy.loginfo("detect nothing!, speed is 3. exit obstacles_cb")
+				acker_data.drive.speed = 3
+				return
+
+			self.temp_x = nearest_x
 			# wall is not detected	
 			if(self.wall_flag == False):
 				# searching for nearest x point for detecting wall		
  				#speed, steering
 	
-				# detect nothing & speed is constant
-				if(nearest_x == 0):
-					rospy.loginfo("detect nothing!")
-					acker_date.drive.speed = 3
 				# detect the object (including car) & control speed
-				else:
-					
-					rospy.loginfo("car is detected & chases!")
-					self.speed_t = self.speed + (nearest_x-self.car_dist)/self.HZ  #target speed by 'pi' controller
-					if (self.car_dist > nearest_x + 0.5):
-						rospy.loginfo("deceleration")
-						self.speed = self.speed_t - self.speed_error*100
-						self.before_speed = self.speed # define speed before a 1 func
-						self.brake = self.brake_unit
-					elif(self.car_dist + 0.5 < nearest_x):
-						rospy.loginfo("acceleration")
-						self.speed = self.speed_t + self.speed_error
-						self.before_speed = self.speed
-						self.brake = 0
-					elif(abs(nearest_x - self.car_dist) <= 0.5):
-						rospy.loginfo("const speed")
-						self.speed = self.before_speed
-						self.brake = 0
+				rospy.loginfo("car is detected & chases!")
+				self.speed_t = self.speed + (nearest_x-self.car_dist)/self.HZ  #target speed by 'pi' controller
+				if (self.car_dist > nearest_x + 0.5):
+					rospy.loginfo("deceleration")
+					self.speed = self.speed_t - self.speed_error*100
+					self.before_speed = self.speed # define speed before a 1 func
+					self.brake = self.brake_unit
+				elif(self.car_dist + 0.5 < nearest_x):
+					rospy.loginfo("acceleration")
+					self.speed = self.speed_t + self.speed_error
+					self.before_speed = self.speed
+					self.brake = 0
+				elif(abs(nearest_x - self.car_dist) <= 0.5):
+					rospy.loginfo("const speed")
+					self.speed = self.before_speed
+					self.brake = 0
 
-					if(self.speed > self.max_speed):
-					    rospy.loginfo("speed reached max_...")
-					    self.speed = self.max_speed
-					elif(self.speed < 0):
-					    rospy.loginfo("speed is less than 0!!")
-					    self.speed = 0
+				if(self.speed > self.max_speed):
+				    rospy.loginfo("speed reached max_...")
+				    self.speed = self.max_speed
+				elif(self.speed < 0):
+				    rospy.loginfo("speed is less than 0!!")
+				    self.speed = 0
 			else:	                                                                      
 				rospy.loginfo("wall is detected & approaching to the wall")
 				self.speed_t = self.speed + (nearest_x-self.wall_dist)/self.HZ  #target speed by 'pi' controller
@@ -135,7 +136,8 @@ class tracking:
 					self.speed = self.speed_t + self.speed_error
 					self.before_speed = self.speed
 					self.brake = 0
-				elif(abs(nearest_x - self.wall_dist) <= 0.5):
+
+				if(nearest_x <= self.wall_dist):
 					rospy.loginfo("finish!")
 					self.speed = 0
 					self.brake = 0
