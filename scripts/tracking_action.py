@@ -35,12 +35,18 @@ class tracking:
 		self.wall_dist = rospy.get_param("/car_tracking/wall_dist") # distance of platform & wall desired
 		self.car_dist = rospy.get_param("/car_tracking/car_dist")   # distance of platform & car desired
 
+		self.wall_detect_start_count = 0
+		self.wall_detect_start_thres = 5
+
 		self.before_speed = 0
 		
 		self.start_flag = False
 		self.finish_flag = False
 
 		self.wall_flag = False
+
+		self.wall_start_check = False
+		self.detect_wall_distance = 0
 		
 	def target_lane_feedback_cb(self, feedback):
 		self.steer = feedback.tracking_feedback
@@ -80,8 +86,21 @@ class tracking:
 					nearest_x = segment.last_point.x
 				# instant difference of x
 				# TODO: change 1.0 value to launch parameter!!!!
-				if(nearest_x - self.temp_x > 1.0):
-					rospy.loginfo('wall detected')
+				rospy.loginfo("nearest_x: %f"%nearest_x)
+				rospy.loginfo("temp_x: %f"%self.temp_x)
+				if(nearest_x - self.temp_x > 5.0):
+					self.wall_start_check = True
+					self.detect_wall_distance = nearest_x
+				
+			if self.wall_start_check == True:
+				if abs(self.detect_wall_distance - nearest_x) < 1.0:
+					self.wall_detect_start_count = self.wall_detect_start_count + 1
+				else:
+					self.wall_detect_start_count = 0
+					self.wall_start_check = False
+
+				if self.wall_detect_start_count >= self.wall_detect_start_thres:
+					rospy.loginfo('wall detected, from now approach to wall')
 					self.wall_flag = True
 
 			acker_data = AckermannDriveStamped() 
@@ -89,6 +108,7 @@ class tracking:
 			if nearest_x == 0:
 				rospy.loginfo("detect nothing!, speed is 3. exit obstacles_cb")
 				acker_data.drive.speed = 3
+				acker_data.drive.brake = 0
 				return
 
 			self.temp_x = nearest_x
@@ -126,16 +146,19 @@ class tracking:
 				self.speed_t = self.speed + (nearest_x-self.wall_dist)/self.HZ  #target speed by 'pi' controller
 				
 				# optimizing 1.5 value, change to launch parameter!!!
-				if (self.wall_dist+1.5> nearest_x ):
+				if (self.wall_dist + 1.0> nearest_x ):
 					rospy.loginfo("deceleration")
 					self.speed = self.speed_t - self.speed_error*100
 					self.before_speed = self.speed # define speed before a 1 func
 					self.brake = self.brake_unit
-				elif(self.wall_dist+1.5 < nearest_x):
+					if self.speed < 1:
+						self.speed = 3
+				elif(self.wall_dist + 1.0 < nearest_x):
 					rospy.loginfo("acceleration")
 					self.speed = self.speed_t + self.speed_error
 					self.before_speed = self.speed
 					self.brake = 0
+					
 
 				if(nearest_x <= self.wall_dist):
 					rospy.loginfo("finish!")
@@ -147,9 +170,6 @@ class tracking:
 				if(self.speed > self.max_speed):
 				    rospy.loginfo("speed reached max_...")
 				    self.speed = self.max_speed
-				elif(self.speed < 0):
-				    rospy.loginfo("speed is less than 0!!")
-				    self.speed = 0
 						
 			#safety action
 			if(nearest_x < 1.0):

@@ -30,11 +30,21 @@ scan_filter_chain:
     min_x: -0.3
     min_y: -0.55
     min_z: -0.28
+- name: back_box_filter
+  type: laser_filters/LaserScanBoxFilter
+  params:
+    box_frame: laser 
+    max_x: 0.0
+    max_y: 100.0
+    max_z: 0.3
+    min_x: -100.0
+    min_y: -100.0
+    min_z: -0.28
 - name: range_filter
   type: laser_filters/LaserScanRangeFilter
   params:
     use_message_range_limits: false   # if not specified defaults to false
-    lower_threshold: 0.3              # if not specified defaults to 0.0
+    lower_threshold: 0.1              # if not specified defaults to 0.0
     upper_threshold: 20.0             # if not specified defaults to 100000.0
     #lower_replacement_value: -.inf    # if not specified defaults to NaN
     #upper_replacement_value: .inf     # if not specified defaults to NaN 
