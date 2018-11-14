@@ -77,9 +77,13 @@ class tracking:
 	def obstacles_cb(self, data):
 		if(self.start_flag == True):
 			
+			nearest_initialized = False
 			nearest_x = 0
 			for segment in data.segments:
-				nearest_x = segment.first_point.x
+				if nearest_initialized == False:
+					nearest_x = segment.first_point.x
+					nearest_initialized = True
+
 				if nearest_x >= segment.first_point.x:
 					nearest_x = segment.first_point.x
 				if nearest_x >= segment.last_point.x:
