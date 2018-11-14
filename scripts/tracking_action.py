@@ -49,20 +49,33 @@ class tracking:
 
 		self.wall_start_check = False
 		self.detect_wall_distance = 0
+
+		self.mission_finish_check = False
+		self.finish_wall_distance = 0
+
+		self.mission_finish_count = 0
+		self.mission_finish_thres = 5
+
 		
 	def target_lane_feedback_cb(self, feedback):
+		pass
 		#self.steer = feedback.tracking_feedback
-
-
+			
 	def keyboard_cb(self, data):
-		key_value = chr(data.code)
-		rospy.loginfo(key_value)
-		if key_value == '273' or key_value == '274':
+		key_value = data.code
+		if key_value == 273 or key_value == 274:
 			self.steer = 0
-		elif key_value == '275':
-			self.steer = self.steer + 4
-		elif key_value == '276':
-			self.steer = self.steer - 4
+		elif key_value == 275:
+			if self.steer > 23:
+				self.steer = 27
+			else:
+				self.steer = self.steer + 4
+		elif key_value == 276:
+			if self.steer < -23:
+				self.steer = -27
+			else:
+				self.steer = self.steer - 4
+		
 
 
 
@@ -84,6 +97,12 @@ class tracking:
 		while not rospy.is_shutdown():
 			if(self.finish_flag == True):
 				self.start_flag = False
+				acker_data = AckermannDriveStamped() 
+				acker_data.drive.speed = 0
+				acker_data.drive.brake = 0
+				acker_data.drive.steering_angle = 0
+				self.pub.publish(acker_data)
+
 				self.server.set_succeeded(result)	
 				break
 			r.sleep()
@@ -113,6 +132,7 @@ class tracking:
 				
 			if self.wall_start_check == True:
 				if abs(self.detect_wall_distance - nearest_x) < 1.0:
+					rospy.loginfo('wall_Detect_start_count: %d'% self.wall_detect_start_count)
 					self.wall_detect_start_count = self.wall_detect_start_count + 1
 				else:
 					self.wall_detect_start_count = 0
@@ -169,7 +189,6 @@ class tracking:
 					rospy.loginfo("deceleration")
 					self.speed = self.speed_t - self.speed_error*100
 					self.before_speed = self.speed # define speed before a 1 func
-					self.brake = self.brake_unit
 					if self.speed < 1:
 						self.speed = 3
 				elif(self.wall_dist + 1.0 < nearest_x):
@@ -180,11 +199,23 @@ class tracking:
 					
 
 				if(nearest_x <= self.wall_dist):
-					rospy.loginfo("finish!")
-					self.speed = 0
-					self.brake = 0
-					self.client.cancel_goal()
-					self.finish_flag = True
+					self.mission_finish_check = True
+					self.finish_wall_distance = nearest_x
+				
+				if self.mission_finish_check == True:
+					if abs(self.finish_wall_distance - nearest_x) < 1.0:
+						rospy.loginfo('mission_finish_count: %d'% self.mission_finish_count)
+						self.mission_finish_count = self.mission_finish_count + 1
+					else:
+						self.mission_finish_count = 0
+						self.mission_finish_check = False
+
+					if self.mission_finish_count >= self.mission_finish_thres:
+						rospy.loginfo("finish!")
+						self.speed = 0
+						self.brake = 0
+						self.client.cancel_goal()
+						self.finish_flag = True
 
 				if(self.speed > self.max_speed):
 				    rospy.loginfo("speed reached max_...")
@@ -194,6 +225,15 @@ class tracking:
 			if(nearest_x < 1.0):
 				acker_data.drive.speed=0
 			
+			acker_data.drive.speed = int(self.speed)
+			acker_data.drive.brake = int(self.brake)		
+			acker_data.drive.steering_angle = self.steer #feedback steering data
+			rospy.loginfo("speed : " + str(acker_data.drive.speed))
+			rospy.loginfo("brake : " + str(acker_data.drive.brake))
+			rospy.loginfo("steering : " + str(acker_data.drive.steering_angle))	
+
+			if self.finish_flag == False:
+				self.pub.publish(acker_data)
 			acker_data.drive.speed = int(self.speed)
 			acker_data.drive.brake = int(self.brake)		
 			acker_data.drive.steering_angle = self.steer #feedback steering data
