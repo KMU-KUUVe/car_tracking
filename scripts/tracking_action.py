@@ -9,6 +9,8 @@ from geometry_msgs.msg import Point
 from ackermann_msgs.msg import AckermannDriveStamped
 from mission_planner.msg import MissionPlannerAction, MissionPlannerGoal, MissionPlannerResult, MissionPlannerFeedback
 
+from keyboard.msg import Key
+
 from car_tracking.msg import car_trackingGoal, car_trackingAction, car_trackingFeedback
 
 class tracking:
@@ -49,7 +51,19 @@ class tracking:
 		self.detect_wall_distance = 0
 		
 	def target_lane_feedback_cb(self, feedback):
-		self.steer = feedback.tracking_feedback
+		#self.steer = feedback.tracking_feedback
+
+
+	def keyboard_cb(self, data):
+		key_value = chr(data.code)
+		rospy.loginfo(key_value)
+		if key_value == '273' or key_value == '274':
+			self.steer = 0
+		elif key_value == '275':
+			self.steer = self.steer + 4
+		elif key_value == '276':
+			self.steer = self.steer - 4
+
 
 
 	# LiDAR Algorithm Start
@@ -60,6 +74,7 @@ class tracking:
 		self.client.send_goal(self.goal, feedback_cb = self.target_lane_feedback_cb)
 		# run algotihm
 		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
+		self.key_sub = rospy.Subscriber('/keyboard/keyup', Key, self.keyboard_cb)
 
 		result = MissionPlannerResult()
 
