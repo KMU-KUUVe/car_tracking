@@ -56,26 +56,9 @@ class tracking:
 		self.mission_finish_count = 0
 		self.mission_finish_thres = 5
 
-		
+
 	def target_lane_feedback_cb(self, feedback):
-		pass
-		#self.steer = feedback.tracking_feedback
-			
-	def keyboard_cb(self, data):
-		key_value = data.code
-		if key_value == 273 or key_value == 274:
-			self.steer = 0
-		elif key_value == 275:
-			if self.steer > 23:
-				self.steer = 27
-			else:
-				self.steer = self.steer + 4
-		elif key_value == 276:
-			if self.steer < -23:
-				self.steer = -27
-			else:
-				self.steer = self.steer - 4
-		
+		self.steer = feedback.tracking_feedback
 
 
 
@@ -87,7 +70,6 @@ class tracking:
 		self.client.send_goal(self.goal, feedback_cb = self.target_lane_feedback_cb)
 		# run algotihm
 		self.sub = rospy.Subscriber('raw_obstacles', Obstacles, self.obstacles_cb)
-		self.key_sub = rospy.Subscriber('/keyboard/keyup', Key, self.keyboard_cb)
 
 		result = MissionPlannerResult()
 
