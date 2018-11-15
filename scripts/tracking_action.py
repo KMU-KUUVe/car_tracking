@@ -110,7 +110,6 @@ class tracking:
 
 	def obstacles_cb(self, data):
 		if(self.start_flag == True):
-			
 			nearest_initialized = False
 			nearest_x = 0
 			for segment in data.segments:
@@ -122,18 +121,21 @@ class tracking:
 					nearest_x = segment.first_point.x
 				if nearest_x >= segment.last_point.x:
 					nearest_x = segment.last_point.x
-				# instant difference of x
-				# TODO: change 1.0 value to launch parameter!!!!
-				rospy.loginfo("nearest_x: %f"%nearest_x)
-				rospy.loginfo("temp_x: %f"%self.temp_x)
-				if(nearest_x - self.temp_x > 5.0):
-					self.wall_start_check = True
-					self.detect_wall_distance = nearest_x
+
+                        # instant difference of x
+                        # TODO: change 1.0 value to launch parameter!!!!
+                        if(nearest_x - self.temp_x > 4.0):
+                                self.wall_start_check = True
+                                self.detect_wall_distance = nearest_x
+
+                        rospy.loginfo("nearest_x: %f"%nearest_x)
+                        rospy.loginfo("temp_x: %f"%self.temp_x)
 				
 			if self.wall_start_check == True:
 				if abs(self.detect_wall_distance - nearest_x) < 1.0:
 					rospy.loginfo('wall_Detect_start_count: %d'% self.wall_detect_start_count)
 					self.wall_detect_start_count = self.wall_detect_start_count + 1
+                                        self.detect_wall_distance = nearest_x
 				else:
 					self.wall_detect_start_count = 0
 					self.wall_start_check = False
@@ -188,9 +190,9 @@ class tracking:
 				if (self.wall_dist + 1.0> nearest_x ):
 					rospy.loginfo("deceleration")
 					self.speed = self.speed_t - self.speed_error*100
-					self.before_speed = self.speed # define speed before a 1 func
 					if self.speed < 1:
 						self.speed = 3
+					self.before_speed = self.speed # define speed before a 1 func
 				elif(self.wall_dist + 1.0 < nearest_x):
 					rospy.loginfo("acceleration")
 					self.speed = self.speed_t + self.speed_error
@@ -206,6 +208,7 @@ class tracking:
 					if abs(self.finish_wall_distance - nearest_x) < 1.0:
 						rospy.loginfo('mission_finish_count: %d'% self.mission_finish_count)
 						self.mission_finish_count = self.mission_finish_count + 1
+                                                self.finish_wall_distance = nearest_x
 					else:
 						self.mission_finish_count = 0
 						self.mission_finish_check = False
