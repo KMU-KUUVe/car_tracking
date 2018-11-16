@@ -4,9 +4,9 @@ import math
 import actionlib
 
 from std_msgs.msg import String
-from obstacle_detector.msg import Obstacles
-from geometry_msgs.msg import Point
-from ackermann_msgs.msg import AckermannDriveStamped
+from obstacle_detector.msg import Obstacles 
+from geometry_msgs.msg import Point 
+from ackermann_msgs.msg import AckermannDriveStamped 
 from mission_planner.msg import MissionPlannerAction, MissionPlannerGoal, MissionPlannerResult, MissionPlannerFeedback
 
 from keyboard.msg import Key
@@ -55,6 +55,8 @@ class tracking:
 
 		self.mission_finish_count = 0
 		self.mission_finish_thres = 5
+
+		self.stop_with_car = False
 
 
 	def target_lane_feedback_cb(self, feedback):
@@ -130,8 +132,11 @@ class tracking:
 
 			if nearest_x == 0:
 				rospy.loginfo("detect nothing!, speed is 3. exit obstacles_cb")
-				acker_data.drive.speed = 3
+				acker_data.drive.speed = 5
 				acker_data.drive.brake = 0
+				acker_data.drive.steering_angle = self.steer #feedback steering data
+
+				self.pub.publish(acker_data)
 				return
 
 			self.temp_x = nearest_x
@@ -142,7 +147,7 @@ class tracking:
 	
 				# detect the object (including car) & control speed
 				rospy.loginfo("car is detected & chases!")
-				self.speed_t = self.speed + (nearest_x-self.car_dist)/self.HZ  #target speed by 'pi' controller
+				self.speed_t = self.speed + (nearest_x-self.car_dist)/40  #target speed by 'pi' controller
 				if (self.car_dist > nearest_x + 0.5):
 					rospy.loginfo("deceleration")
 					self.speed = self.speed_t - self.speed_error*100
@@ -166,7 +171,7 @@ class tracking:
 				    self.speed = 0
 			else:	                                                                      
 				rospy.loginfo("wall is detected & approaching to the wall")
-				self.speed_t = self.speed + (nearest_x-self.wall_dist)/self.HZ  #target speed by 'pi' controller
+				self.speed_t = self.speed + (nearest_x-self.wall_dist)/75  #target speed by 'pi' controller
 				
 				# optimizing 1.5 value, change to launch parameter!!!
 				if (self.wall_dist + 1.0> nearest_x ):
@@ -205,20 +210,28 @@ class tracking:
 				if(self.speed > self.max_speed):
 				    rospy.loginfo("speed reached max_...")
 				    self.speed = self.max_speed
+
+			if(self.stop_with_car == True and nearest_x >= 1.7):
+				for speed in range(10, 5, -2):
+					acker_data.drive.speed = speed
+					acker_data.drive.steering_angle = self.steer #feedback steering data
+					rospy.loginfo("speed : " + str(acker_data.drive.speed))
+					rospy.loginfo("brake : " + str(acker_data.drive.brake))
+					rospy.loginfo("steering : " + str(acker_data.drive.steering_angle))	
+					self.pub.publish(acker_data)
+					rospy.sleep(0.4)
+				self.stop_with_car = False
+				self.speed = 8
+				self.before_speed = self.speed
+				self.brake = 0
+					
 						
 			#safety action
-			if(nearest_x < 1.0):
+			if(nearest_x < 1.1):
+				rospy.loginfo("safety action!!")
+				self.stop_with_car = True
 				acker_data.drive.speed=0
 			
-			acker_data.drive.speed = int(self.speed)
-			acker_data.drive.brake = int(self.brake)		
-			acker_data.drive.steering_angle = self.steer #feedback steering data
-			rospy.loginfo("speed : " + str(acker_data.drive.speed))
-			rospy.loginfo("brake : " + str(acker_data.drive.brake))
-			rospy.loginfo("steering : " + str(acker_data.drive.steering_angle))	
-
-			if self.finish_flag == False:
-				self.pub.publish(acker_data)
 			acker_data.drive.speed = int(self.speed)
 			acker_data.drive.brake = int(self.brake)		
 			acker_data.drive.steering_angle = self.steer #feedback steering data

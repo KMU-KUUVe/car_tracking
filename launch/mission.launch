@@ -1,6 +1,6 @@
 <?xml version="1.0"?>
 <launch>
-  <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="laser_filter">
+  <node pkg="laser_filters" type="scan_to_scan_filter_chain" output="screen" name="car_tracking_laser_filter">
 	  <rosparam command="load" file="$(find car_tracking)/launch/box_filter.yaml" />
 	  <remap from="scan_filtered" to="car_tracking_scan_filtered"/>
   </node>
@@ -11,13 +11,13 @@
 	  <param name="HZ" type="double" value="50.0" />
 	  <param name="speed_error" type="double" value="0.001" />
 	  <param name="brake_unit" value="90" />
-	  <param name="max_speed" value="5" />
+	  <param name="max_speed" value="7" />
 	 <!-- <param name="car_width" value="3" /> -->
 	  <param name="wall_dist" type="double" value="7.5" />
-	  <param name="car_dist" type="double" value="3.0" />
+	  <param name="car_dist" type="double" value="2.5" />
   </node>
 
-  <node name="obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
+  <node name="car_tracking_obstacle_extractor" pkg="obstacle_detector" type="obstacle_extractor_node">
 	<remap from="scan" to="car_tracking_scan_filtered"/>
 	<remap from="raw_obstacles" to="car_tracking_raw_obstacles"/>
     <param name="active"               value="true"/>
